@@ -1,0 +1,167 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-ajax/iron-request.html">
+<!--
+An element providing a solution for REST-APIs.
+
+Example:
+
+    <ajax-rest base-url="/user" id="rest"></ajax-rest>
+    ...
+    this.$.rest.get(123, function(req) {...});
+
+@demo demo/index.html
+@hero hero.svg
+-->
+
+<dom-module id="ajax-rest">
+  <template>
+    <style>
+    </style>
+  </template>
+
+  <script>
+    Polymer({
+      is: 'ajax-rest',
+
+      properties: {
+          baseUrl: String        
+      },      
+      
+      /*      
+      * Provides a fallback callback if the callback is not set. This is required in the REST-API 
+      */
+      _callbackProvider: function(callback) {
+          if(callback != null && callback != undefined) {
+              return callback;
+          } else {
+              return function() {
+                  console.log('no callback provided');
+              }
+          }
+      },
+
+      /**
+      * General send function. Can be used to create your own requests. For REST-API use one of the following methods instead: get, post, put, remove
+      *
+      * @param {{
+      *   url: string,
+      *   method: (string|undefined),
+      *   async: (boolean|undefined),
+      *   body: (ArrayBuffer|ArrayBufferView|Blob|Document|FormData|null|string|undefined|Object),
+      *   headers: (Object|undefined),
+      *   handleAs: (string|undefined),
+      *   jsonPrefix: (string|undefined),
+      *   withCredentials: (boolean|undefined)}} options -
+      *     url The url to which the request is sent.
+      *     method The HTTP method to use, default is GET.
+      *     async By default, all requests are sent asynchronously. To send synchronous requests,
+      *         set to true.
+      *     body The content for the request body for POST method.
+      *     headers HTTP request headers.
+      *     handleAs The response type. Default is 'text'.
+      *     withCredentials Whether or not to send credentials on the request. Default is false.
+      *   timeout: (Number|undefined)
+      *  }}
+      * @return
+      */
+      send: function(options, onSuccess, onError) {
+          var request = document.createElement('iron-request');
+          var requestOptions = {
+              url: options.url,
+              method: options.method,
+              handleAs: 'json',
+              body: JSON.stringify(options.body) || null
+          };
+          
+          request.completes.then(
+              this._callbackProvider(onSuccess)(request)
+          ).catch(
+              this._callbackProvider(onError)(request)
+          );
+          
+          request.send(requestOptions);
+      },
+
+      /**
+      * REST get call
+      *
+      * @param {{id:(string|integer), onSuccess: Callback, onError: Callback}}
+      */
+      get: function(id, onSuccess, onError) {
+          var requestOptions;
+          
+          if(id != null && id != undefined) {
+            requestOptions = {
+                url: (this.baseUrl || '')+"/"+id,
+                method: 'GET'
+            }
+          } else {
+              requestOptions = {
+                url: (this.baseUrl || ''),
+                method: 'GET'
+            }
+          }
+          
+          this.send(requestOptions, onSuccess, onError);          
+      },
+      
+      /**
+      * REST post call
+      *
+      * @param {{data:(ArrayBuffer|ArrayBufferView|Blob|Document|FormData|null|string|undefined|Object), onSuccess: Callback, onError: Callback}}
+      */
+      post: function(data, onSuccess, onError) {
+          
+          var requestOptions = {
+              url: (this.baseUrl || ''),
+              method: 'POST',
+              body: data
+          }
+          
+          this.send(requestOptions, onSuccess, onError);          
+      },
+      
+      /**
+      * REST put call
+      *
+      * @param {{id:(string|integer), data:(ArrayBuffer|ArrayBufferView|Blob|Document|FormData|null|string|undefined|Object), onSuccess: Callback, onError: Callback}}
+      */
+      put: function(id, data, onSuccess, onError) {
+          
+          var requestOptions = {
+              url: (this.baseUrl || '')+"/"+id,
+              method: 'PUT',
+              body: data
+          }
+          
+          this.send(requestOptions, onSuccess, onError);          
+      },
+      
+      /**
+      * REST delete call
+      *
+      * @param {{id:(string|integer), onSuccess: Callback, onError: Callback}}
+      */
+      remove: function(id, onSuccess, onError) {
+          
+          var requestOptions = {
+              url: (this.baseUrl || '')+"/"+id,
+              method: 'DELETE'
+          }
+          
+          this.send(requestOptions, onSuccess, onError);          
+      },
+
+    });
+  </script>
+</dom-module>
